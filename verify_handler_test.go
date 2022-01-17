@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/smartystreets/gunit"
@@ -26,27 +27,46 @@ func (hf *HandlerFixture) Setup() {
 	hf.handler = NewVerifyHandler(hf.input, hf.output, hf.application)
 }
 
-func (hf *HandlerFixture) TestVerifierReceivesInput() {
+func (hf *HandlerFixture) enqueueEnvelope(street1 string) *Envelope {
 	envelope := &Envelope{
 		Input: AddressInput{
-			Street1: "42",
+			Street1: street1,
 		},
 	}
 	hf.input <- envelope
+	return envelope
+}
+
+func (hf *HandlerFixture) TestVerifierReceivesInput() {
+	envelope := hf.enqueueEnvelope("street")
 	close(hf.input)
 
 	hf.handler.Handle()
 
 	hf.AssertEqual(envelope, <-hf.output)
-	hf.AssertEqual(envelope.Input, hf.application.input)
+	hf.AssertEqual("STREET", envelope.Output.DeliveryLine1)
+}
+
+func (hf *HandlerFixture) TestInputQueueDrained() {
+	envelope1 := hf.enqueueEnvelope("41")
+	envelope2 := hf.enqueueEnvelope("42")
+	envelope3 := hf.enqueueEnvelope("43")
+
+	close(hf.input)
+	hf.handler.Handle()
+	hf.AssertEqual(envelope1, <-hf.output)
+	hf.AssertEqual(envelope2, <-hf.output)
+	hf.AssertEqual(envelope3, <-hf.output)
 }
 
 ///////////////////////////////////////////////////////////
 type FakeVerifier struct {
-	input AddressInput
+	input  AddressInput
+	output AddressOutput
 }
 
 func NewFakeVerifier() *FakeVerifier { return &FakeVerifier{} }
-func (fv *FakeVerifier) Verify(value AddressInput) {
+func (fv *FakeVerifier) Verify(value AddressInput) AddressOutput {
 	fv.input = value
+	return AddressOutput{DeliveryLine1: strings.ToUpper(value.Street1)}
 }

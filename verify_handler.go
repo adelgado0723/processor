@@ -7,19 +7,20 @@ type VerifyHandler struct {
 }
 
 type Verifier interface {
-	Verify(AddressInput)
+	Verify(AddressInput) AddressOutput
 }
 
-func NewVerifyHandler(in, out chan *Envelope, application Verifier) *VerifyHandler {
+func NewVerifyHandler(in, out chan *Envelope, verifier Verifier) *VerifyHandler {
 	return &VerifyHandler{
 		input:       in,
 		output:      out,
-		application: application,
+		application: verifier,
 	}
 }
 func (vh *VerifyHandler) Handle() {
-	received := <-vh.input
-	vh.application.Verify(received.Input)
-	vh.output <- received
+	for envelope := range vh.input {
+		envelope.Output = vh.application.Verify(envelope.Input)
+		vh.output <- envelope
+	}
 
 }
