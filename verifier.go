@@ -16,25 +16,26 @@ type SmartyVerifier struct {
 
 func (sv *SmartyVerifier) Verify(input AddressInput) AddressOutput {
 	request := sv.buildRequest(input)
-
 	response, _ := sv.client.Do(request)
+	candidates := sv.decodeResponse(response)
 
-	output := sv.decodeResponse(response)
-
-	if response == nil {
-		return AddressOutput{}
-	}
-	return sv.translateCandidate(output[0])
+	return sv.prepareAddressOutput(candidates)
 }
 
 func (sv *SmartyVerifier) decodeResponse(response *http.Response) (output []Candidate) {
-	body := response.Body
-	json.NewDecoder(body).Decode(&output)
+	if response != nil {
+		defer response.Body.Close()
+		body := response.Body
+		json.NewDecoder(body).Decode(&output)
+	}
 	return output
 }
 
-func (sv *SmartyVerifier) translateCandidate(candidate Candidate) AddressOutput {
-
+func (sv *SmartyVerifier) prepareAddressOutput(candidates []Candidate) AddressOutput {
+	if len(candidates) == 0 {
+		return AddressOutput{Status: "Invalid API Response JSON"}
+	}
+	candidate := candidates[0]
 	return AddressOutput{
 		DeliveryLine1: candidate.DeliveryLine1,
 		LastLine:      candidate.LastLine,

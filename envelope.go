@@ -8,6 +8,7 @@ type (
 		ZIPCode string
 	}
 	AddressOutput struct {
+		Status        string // Is the result valid?
 		DeliveryLine1 string
 		LastLine      string
 		City          string

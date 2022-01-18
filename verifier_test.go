@@ -2,7 +2,7 @@ package processor
 
 import (
 	"bytes"
-	"io/ioutil"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -76,22 +76,44 @@ const rawJSONOutput = `
 	}
 ]`
 
-func (sv *VerifierFixture) TestMalformedJSONHandled()
+func (vf *VerifierFixture) TestMalformedJSONHandled() {
 
-const malformedRawJSONOutput = `alert('Hello, world!' DROP TABLE *);`
+	const malformedRawJSONOutput = `alert('Hello, world!' DROP TABLE *);`
+	vf.client.Configure(malformedRawJSONOutput, http.StatusOK, nil)
+	result := vf.verifier.Verify(AddressInput{})
+	vf.AssertEqual(result.Status, "Invalid API Response JSON")
+
+}
+
+func (vf *VerifierFixture) TestHTTPErrorHandled() {
+	vf.client.Configure("", 0, errors.New("GOPHERS!"))
+	result := vf.verifier.Verify(AddressInput{})
+	vf.Assert(result.Status != "")
+}
+
+func (vf *VerifierFixture) TestHTTPResponseBodyClosed() {
+	vf.client.Configure(rawJSONOutput, http.StatusOK, nil)
+	vf.verifier.Verify(AddressInput{})
+	vf.AssertEqual(vf.client.responseBody.closed, 1)
+}
 
 ////////////////////////////////////////////////////////////////
 
 type FakeHTTPClient struct {
-	request  *http.Request
-	response *http.Response
-	err      error
+	request      *http.Request
+	response     *http.Response
+	responseBody *SpyBuffer
+	err          error
 }
 
 func (fhc *FakeHTTPClient) Configure(responsetext string, statusCode int, err error) {
-	fhc.response = &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewBufferString(responsetext)),
-		StatusCode: statusCode,
+	if err == nil {
+		fhc.responseBody = NewSpyBuffer(responsetext)
+
+		fhc.response = &http.Response{
+			Body:       fhc.responseBody,
+			StatusCode: statusCode,
+		}
 	}
 	fhc.err = err
 }
@@ -100,3 +122,20 @@ func (fhc *FakeHTTPClient) Do(request *http.Request) (*http.Response, error) {
 	fhc.request = request
 	return fhc.response, fhc.err
 }
+
+////////////////////////////////////////////////////////////////
+// Create a Spy Buffer that counts how many times close() was called
+type SpyBuffer struct {
+	// this syntax allows SpyBuffer to have the same Read/Close/etc
+	// functionality that bytes.Buffer has without having to implement those methods
+	*bytes.Buffer
+	closed int
+}
+
+func (sb *SpyBuffer) Close() error {
+	sb.closed++
+	sb.Buffer.Reset()
+	return nil
+}
+
+func NewSpyBuffer(value string) *SpyBuffer { return &SpyBuffer{Buffer: bytes.NewBufferString(value)} }
