@@ -9,6 +9,10 @@ type (
 	}
 	AddressOutput struct {
 		DeliveryLine1 string
+		LastLine      string
+		City          string
+		State         string
+		ZIPCode       string
 	}
 	Envelope struct {
 		Input  AddressInput

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/smartystreets/gunit"
@@ -34,10 +33,11 @@ func (vf *VerifierFixture) rawQuery() string {
 func (vf *VerifierFixture) TestRequestComposedProperly() {
 	input := AddressInput{
 		Street1: "Street1",
-		City:    "City & City",
+		City:    "City",
 		State:   "State",
 		ZIPCode: "ZIPCode",
 	}
+	vf.client.Configure("[{}]", http.StatusOK, nil)
 	vf.verifier.Verify(input)
 
 	vf.AssertEqual("GET", vf.client.request.Method)
@@ -45,10 +45,7 @@ func (vf *VerifierFixture) TestRequestComposedProperly() {
 	vf.AssertQueryStringValue("city", input.City)
 	vf.AssertQueryStringValue("state", input.State)
 	vf.AssertQueryStringValue("zipcode", input.ZIPCode)
-	vf.AssertQueryStringValue("street", "Street1")
 	vf.AssertEqual("/street-address", vf.client.request.URL.Path)
-	vf.Assert(strings.Contains(vf.client.request.URL.RawQuery, "%26"))
-
 }
 
 func (vf *VerifierFixture) AssertQueryStringValue(key, expected string) {
@@ -57,13 +54,31 @@ func (vf *VerifierFixture) AssertQueryStringValue(key, expected string) {
 }
 
 func (vf *VerifierFixture) TestResponseParsed() {
-	vf.client.response = &http.Response{
-		Body:       ioutil.NopCloser(bytes.NewBufferString(`[{}]`)),
-		StatusCode: http.StatusOK,
-	}
+	vf.client.Configure(rawJSONOutput, http.StatusOK, nil)
 	result := vf.verifier.Verify(AddressInput{})
-	vf.AssertEqual(result.DeliveryLine1, "Hello World")
+	vf.AssertEqual(result.DeliveryLine1, "1 Santa Claus Ln")
+	vf.AssertEqual(result.LastLine, "North Pole AK 99705-9901")
+	vf.AssertEqual(result.City, "North Pole")
+	vf.AssertEqual(result.State, "AK")
+	vf.AssertEqual(result.ZIPCode, "99705")
 }
+
+const rawJSONOutput = `
+[
+	{
+		"delivery_line_1": "1 Santa Claus Ln",
+		"last_line": "North Pole AK 99705-9901",
+		"components": {
+			"city_name": "North Pole",
+			"state_abbreviation": "AK",
+			"zipcode": "99705"
+		}
+	}
+]`
+
+func (sv *VerifierFixture) TestMalformedJSONHandled()
+
+const malformedRawJSONOutput = `alert('Hello, world!' DROP TABLE *);`
 
 ////////////////////////////////////////////////////////////////
 
@@ -73,7 +88,7 @@ type FakeHTTPClient struct {
 	err      error
 }
 
-func (fhc *FakeHTTPClient) NewFakeHTTPClient(responsetext string, statusCode int, err error) {
+func (fhc *FakeHTTPClient) Configure(responsetext string, statusCode int, err error) {
 	fhc.response = &http.Response{
 		Body:       ioutil.NopCloser(bytes.NewBufferString(responsetext)),
 		StatusCode: statusCode,
