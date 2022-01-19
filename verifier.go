@@ -36,13 +36,30 @@ func (sv *SmartyVerifier) prepareAddressOutput(candidates []Candidate) AddressOu
 		return AddressOutput{Status: "Invalid API Response JSON"}
 	}
 	candidate := candidates[0]
+	status := computeStatus(candidate)
 	return AddressOutput{
+		Status:        status,
 		DeliveryLine1: candidate.DeliveryLine1,
 		LastLine:      candidate.LastLine,
 		City:          candidate.Components.City,
 		State:         candidate.Components.State,
 		ZIPCode:       candidate.Components.ZIPCode,
 	}
+}
+func computeStatus(candidate Candidate) string {
+	analysis := candidate.Analysis
+	// fmt.Printf("Values in computeStatus(): Match: %v, Vacant: %v, Active: %v\n", analysis.Match, analysis.Vacant, analysis.Active)
+	if analysis.Match == "Y" {
+
+		if analysis.Vacant == "N" && analysis.Active == "Y" {
+			return "Deliverable"
+		} else if analysis.Vacant == "Y" {
+			return "Vacant"
+		} else {
+			return "Inactive"
+		}
+	}
+	return ""
 }
 func (verifier *SmartyVerifier) buildRequest(input AddressInput) *http.Request {
 	var query url.Values = make(url.Values)
@@ -64,4 +81,9 @@ type Candidate struct {
 		State   string `json:"state_abbreviation"`
 		ZIPCode string `json:"zipcode"`
 	} `json:"components"`
+	Analysis struct {
+		Match  string `json:"dpv_match_code"`
+		Vacant string `json:"dpv_vacant"`
+		Active string `json:"active"`
+	} `json:"analysis"`
 }

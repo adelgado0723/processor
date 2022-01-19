@@ -3,6 +3,7 @@ package processor
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -95,6 +96,38 @@ func (vf *VerifierFixture) TestHTTPResponseBodyClosed() {
 	vf.client.Configure(rawJSONOutput, http.StatusOK, nil)
 	vf.verifier.Verify(AddressInput{})
 	vf.AssertEqual(vf.client.responseBody.closed, 1)
+}
+
+func (vf *VerifierFixture) TestDeliverableAddressStatus() {
+	vf.client.Configure(buildAnalysisJSON("Y", "N", "Y"), http.StatusOK, nil)
+	output := vf.verifier.Verify(AddressInput{})
+	vf.AssertEqual(output.Status, "Deliverable")
+}
+func buildAnalysisJSON(match, vacant, active string) string {
+	template := `[
+	{
+		"delivery_line_1": "1 Santa Claus Ln",
+		"last_line": "North Pole AK 99705-9901",
+		"analysis": {
+			"dpv_match_code": "%s",
+			"dpv_vacant": "%s",
+			"active": "%s"
+		}
+	}
+]`
+	return fmt.Sprintf(template, match, vacant, active)
+}
+
+func (vf *VerifierFixture) TestValidVacantAddress() {
+	vf.client.Configure(buildAnalysisJSON("Y", "Y", "Y"), http.StatusOK, nil)
+	output := vf.verifier.Verify(AddressInput{})
+	vf.AssertEqual(output.Status, "Vacant")
+}
+
+func (vf *VerifierFixture) TestValidInactiveAddress() {
+	vf.client.Configure(buildAnalysisJSON("Y", "N", "N"), http.StatusOK, nil)
+	output := vf.verifier.Verify(AddressInput{})
+	vf.AssertEqual(output.Status, "Inactive")
 }
 
 ////////////////////////////////////////////////////////////////
