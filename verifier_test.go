@@ -98,10 +98,22 @@ func (vf *VerifierFixture) TestHTTPResponseBodyClosed() {
 	vf.AssertEqual(vf.client.responseBody.closed, 1)
 }
 
-func (vf *VerifierFixture) TestDeliverableAddressStatus() {
-	vf.client.Configure(buildAnalysisJSON("Y", "N", "Y"), http.StatusOK, nil)
-	output := vf.verifier.Verify(AddressInput{})
-	vf.AssertEqual(output.Status, "Deliverable")
+func (vf *VerifierFixture) TestAddressStatus() {
+	var (
+		deliverableJSON      string = buildAnalysisJSON("Y", "N", "Y")
+		missingSecondaryJSON string = buildAnalysisJSON("D", "N", "Y")
+		droppedSecondaryJSON string = buildAnalysisJSON("S", "N", "Y")
+		vacantJSON           string = buildAnalysisJSON("Y", "Y", "Y")
+		inactiveJSON         string = buildAnalysisJSON("Y", "N", "?")
+		invalidJSON          string = buildAnalysisJSON("N", "?", "?")
+	)
+	vf.assertStatus(deliverableJSON, "Deliverable")
+	vf.assertStatus(missingSecondaryJSON, "Deliverable")
+	vf.assertStatus(droppedSecondaryJSON, "Deliverable")
+	vf.assertStatus(vacantJSON, "Vacant")
+	vf.assertStatus(inactiveJSON, "Inactive")
+	vf.assertStatus(invalidJSON, "Invalid")
+
 }
 func buildAnalysisJSON(match, vacant, active string) string {
 	template := `[
@@ -118,16 +130,10 @@ func buildAnalysisJSON(match, vacant, active string) string {
 	return fmt.Sprintf(template, match, vacant, active)
 }
 
-func (vf *VerifierFixture) TestValidVacantAddress() {
-	vf.client.Configure(buildAnalysisJSON("Y", "Y", "Y"), http.StatusOK, nil)
+func (vf *VerifierFixture) assertStatus(jsonResponse, expectedStatus string) {
+	vf.client.Configure(jsonResponse, http.StatusOK, nil)
 	output := vf.verifier.Verify(AddressInput{})
-	vf.AssertEqual(output.Status, "Vacant")
-}
-
-func (vf *VerifierFixture) TestValidInactiveAddress() {
-	vf.client.Configure(buildAnalysisJSON("Y", "N", "N"), http.StatusOK, nil)
-	output := vf.verifier.Verify(AddressInput{})
-	vf.AssertEqual(output.Status, "Inactive")
+	vf.AssertEqual(output.Status, expectedStatus)
 }
 
 ////////////////////////////////////////////////////////////////

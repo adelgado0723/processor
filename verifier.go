@@ -48,18 +48,18 @@ func (sv *SmartyVerifier) prepareAddressOutput(candidates []Candidate) AddressOu
 }
 func computeStatus(candidate Candidate) string {
 	analysis := candidate.Analysis
-	// fmt.Printf("Values in computeStatus(): Match: %v, Vacant: %v, Active: %v\n", analysis.Match, analysis.Vacant, analysis.Active)
-	if analysis.Match == "Y" {
-
-		if analysis.Vacant == "N" && analysis.Active == "Y" {
-			return "Deliverable"
-		} else if analysis.Vacant == "Y" {
-			return "Vacant"
-		} else {
-			return "Inactive"
-		}
+	if !isDeliverable(analysis.Match) {
+		return "Invalid"
+	} else if analysis.Vacant == "Y" {
+		return "Vacant"
+	} else if analysis.Active != "Y" {
+		return "Inactive"
+	} else {
+		return "Deliverable"
 	}
-	return ""
+}
+func isDeliverable(value string) bool {
+	return value == "Y" || value == "S" || value == "D"
 }
 func (verifier *SmartyVerifier) buildRequest(input AddressInput) *http.Request {
 	var query url.Values = make(url.Values)
@@ -71,19 +71,4 @@ func (verifier *SmartyVerifier) buildRequest(input AddressInput) *http.Request {
 	request, _ := http.NewRequest("GET", "/street-address?"+query.Encode(), nil)
 	return request
 
-}
-
-type Candidate struct {
-	DeliveryLine1 string `json:"delivery_line_1"`
-	LastLine      string `json:"last_line"`
-	Components    struct {
-		City    string `json:"city_name"`
-		State   string `json:"state_abbreviation"`
-		ZIPCode string `json:"zipcode"`
-	} `json:"components"`
-	Analysis struct {
-		Match  string `json:"dpv_match_code"`
-		Vacant string `json:"dpv_vacant"`
-		Active string `json:"active"`
-	} `json:"analysis"`
 }
