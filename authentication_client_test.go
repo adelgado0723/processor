@@ -21,19 +21,33 @@ type AuthenticationClientFixture struct {
 
 func (af *AuthenticationClientFixture) Setup() {
 	af.inner = &FakeHTTPClient{}
-	af.client = NewAuthenticationClient(af.inner, "http", "otherurl.com", "authid", "auth-token")
+	af.client = NewAuthenticationClient(af.inner, "http", "otherurl.com", "authid", "authtoken")
 }
 
+func (af *AuthenticationClientFixture) assertQueryStringValue(key, expectedValue string) {
+
+	af.AssertEqual(af.inner.request.URL.Query().Get(key), expectedValue)
+}
 func (af *AuthenticationClientFixture) TestProvidedInformationAddedBeforeRequestIsSent() {
 	// this request doesn't return an error
 	// and just panics
-	request := httptest.NewRequest("GET", "/path", nil)
+	request := httptest.NewRequest("GET", "/path?existingKey=existingValue", nil)
 	af.client.Do(request)
-	af.AssertEqual(af.inner.request.Host, "otherurl.com")
+
+	af.assertReequestConnectionInformation()
+	af.assertQueryStringIncludesAuthentication()
+}
+
+func (af *AuthenticationClientFixture) assertReequestConnectionInformation() {
 	af.AssertEqual(af.inner.request.URL.Scheme, "http")
+	af.AssertEqual(af.inner.request.Host, "otherurl.com")
 	af.AssertEqual(af.inner.request.URL.Host, "otherurl.com")
-	af.AssertEqual(af.inner.request.URL.Query().Get("auth-id"), "authid")
-	af.AssertEqual(af.inner.request.URL.Query().Get("auth-token"), "authtoken")
+}
+func (af *AuthenticationClientFixture) assertQueryStringIncludesAuthentication() {
+	af.assertQueryStringValue("auth-id", "authid")
+	af.assertQueryStringValue("auth-token", "authtoken")
+	af.assertQueryStringValue("existingKey", "existingValue")
+
 }
 
 func (af *AuthenticationClientFixture) TestResponseFromInnerClientReturned() {
