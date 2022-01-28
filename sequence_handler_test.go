@@ -24,34 +24,27 @@ func (shf *SequenceHandlerFixture) Setup() {
 }
 
 func (shf *SequenceHandlerFixture) TestExpectedEnvelopeSentToOutput() {
-	envelope := &Envelope{Sequence: 0}
-	shf.input <- envelope
-	close(shf.input)
+	shf.sendEnvelopesInSequence(0, 1, 2, 3, 4)
 	shf.handler.Handle()
 
-	shf.AssertEqual(<-shf.output, envelope)
+	shf.assertSequenceOrder(shf.sequenceOrder(), []int{0, 1, 2, 3, 4})
+	shf.AssertEqual(len(shf.handler.buffer), 0)
+}
+
+func (shf *SequenceHandlerFixture) sendEnvelopesInSequence(sequences ...int) {
+	for _, sequence := range sequences {
+		shf.input <- &Envelope{Sequence: sequence}
+	}
+	close(shf.input)
 }
 
 func (shf *SequenceHandlerFixture) TestEvelopeReceivedOutOfOrder_BufferedUntilContiguousBlock() {
 	// Invalid order
-	shf.input <- &Envelope{Sequence: 4}
-	shf.input <- &Envelope{Sequence: 1}
-	shf.input <- &Envelope{Sequence: 2}
-	shf.input <- &Envelope{Sequence: 3}
-	shf.input <- &Envelope{Sequence: 0}
-
-	close(shf.input)
+	shf.sendEnvelopesInSequence(4, 1, 2, 3, 0)
 	shf.handler.Handle()
 
-	close(shf.output)
-
 	shf.assertSequenceOrder(shf.sequenceOrder(), []int{0, 1, 2, 3, 4})
-	// Expecting envelope0 first despite invalid order
-	// shf.AssertEqual((<-shf.output).Sequence, 0)
-	// shf.AssertEqual((<-shf.output).Sequence, 1)
-	// shf.AssertEqual((<-shf.output).Sequence, 2)
-	// shf.AssertEqual((<-shf.output).Sequence, 3)
-	// shf.AssertEqual((<-shf.output).Sequence, 4)
+	// Checking map deleted envelopes after processing
 	shf.AssertEqual(len(shf.handler.buffer), 0)
 }
 

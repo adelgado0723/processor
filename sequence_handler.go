@@ -32,4 +32,5 @@ func (sh *SequenceHandler) Handle() {
 	for envelope := range sh.input {
 		sh.processEnvelope(envelope)
 	}
+	close(sh.output)
 }
