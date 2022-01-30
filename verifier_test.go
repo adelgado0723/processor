@@ -141,13 +141,13 @@ func (vf *VerifierFixture) assertStatus(jsonResponse, expectedStatus string) {
 type FakeHTTPClient struct {
 	request      *http.Request
 	response     *http.Response
-	responseBody *SpyBuffer
+	responseBody *VerifierSpyBuffer
 	err          error
 }
 
 func (fhc *FakeHTTPClient) Configure(responsetext string, statusCode int, err error) {
 	if err == nil {
-		fhc.responseBody = NewSpyBuffer(responsetext)
+		fhc.responseBody = NewVerifierSpyBuffer(responsetext)
 
 		fhc.response = &http.Response{
 			Body:       fhc.responseBody,
@@ -164,17 +164,19 @@ func (fhc *FakeHTTPClient) Do(request *http.Request) (*http.Response, error) {
 
 ////////////////////////////////////////////////////////////////
 // Create a Spy Buffer that counts how many times close() was called
-type SpyBuffer struct {
+type VerifierSpyBuffer struct {
 	// this syntax allows SpyBuffer to have the same Read/Close/etc
 	// functionality that bytes.Buffer has without having to implement those methods
 	*bytes.Buffer
 	closed int
 }
 
-func (sb *SpyBuffer) Close() error {
+func (sb *VerifierSpyBuffer) Close() error {
 	sb.closed++
 	sb.Buffer.Reset()
 	return nil
 }
 
-func NewSpyBuffer(value string) *SpyBuffer { return &SpyBuffer{Buffer: bytes.NewBufferString(value)} }
+func NewVerifierSpyBuffer(value string) *VerifierSpyBuffer {
+	return &VerifierSpyBuffer{Buffer: bytes.NewBufferString(value)}
+}
