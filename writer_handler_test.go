@@ -23,7 +23,7 @@ type WriterHandlerFixture struct {
 }
 
 func (whf *WriterHandlerFixture) Setup() {
-	whf.buffer = NewWriterSpyBuffer("")
+	whf.buffer = NewReadWriteSpyBuffer("")
 	whf.input = make(chan *Envelope, 10)
 	whf.handler = NewWriterHandler(whf.input, whf.buffer)
 }
@@ -128,6 +128,6 @@ func (sb *WriterSpyBuffer) Close() error {
 	return nil
 }
 
-func NewWriterSpyBuffer(value string) *WriterSpyBuffer {
+func NewReadWriteSpyBuffer(value string) *WriterSpyBuffer {
 	return &WriterSpyBuffer{Buffer: bytes.NewBufferString(value)}
 }
