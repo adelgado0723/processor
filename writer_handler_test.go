@@ -18,7 +18,7 @@ type WriterHandlerFixture struct {
 	*gunit.Fixture
 	handler *WriterHandler
 	input   chan *Envelope
-	buffer  *WriterSpyBuffer
+	buffer  *ReadWriteSpyBuffer
 	writer  *csv.Writer
 }
 
@@ -115,19 +115,19 @@ func createOutput(index string) AddressOutput {
 
 ////////////////////////////////////////////////////////////////
 // Create a Spy Buffer that counts how many times close() was called
-type WriterSpyBuffer struct {
+type ReadWriteSpyBuffer struct {
 	// this syntax allows SpyBuffer to have the same Read/Close/etc
 	// functionality that bytes.Buffer has without having to implement those methods
 	*bytes.Buffer
 	closed int
 }
 
-func (sb *WriterSpyBuffer) Close() error {
+func (sb *ReadWriteSpyBuffer) Close() error {
 	sb.closed++
 	// sb.Buffer.Reset()
 	return nil
 }
 
-func NewReadWriteSpyBuffer(value string) *WriterSpyBuffer {
-	return &WriterSpyBuffer{Buffer: bytes.NewBufferString(value)}
+func NewReadWriteSpyBuffer(value string) *ReadWriteSpyBuffer {
+	return &ReadWriteSpyBuffer{Buffer: bytes.NewBufferString(value)}
 }
