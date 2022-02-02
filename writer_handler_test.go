@@ -100,7 +100,6 @@ func (whf *WriterHandlerFixture) sendEnvelopes(count int) {
 			Output: createOutput(strconv.Itoa(i)),
 		}
 	}
-	whf.input <- endOfFile
 	close(whf.input)
 }
 func createOutput(index string) AddressOutput {

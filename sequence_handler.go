@@ -31,9 +31,7 @@ func (sh *SequenceHandler) processEnvelope(envelope *Envelope) {
 
 func (sh *SequenceHandler) Handle() {
 	for envelope := range sh.input {
-		if envelope == endOfFile {
-			sh.processEnvelope(envelope)
-		}
+		sh.processEnvelope(envelope)
 	}
 	close(sh.output)
 }

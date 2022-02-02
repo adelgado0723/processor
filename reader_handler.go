@@ -43,7 +43,7 @@ func (rh *ReaderHandler) Handle() error {
 }
 
 func (rh *ReaderHandler) close() {
-	rh.output <- endOfFile
+	rh.output <- &Envelope{Sequence: rh.sequence, EOF: true}
 	close(rh.output)
 	rh.closer.Close()
 }

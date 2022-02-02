@@ -45,7 +45,7 @@ func (rhf *ReaderHandlerFixture) assertRecordsSent() {
 
 }
 func (rhf *ReaderHandlerFixture) assertCleanup() {
-	rhf.AssertEqual(<-rhf.output, endOfFile)
+	rhf.AssertDeepEqual(<-rhf.output, &Envelope{Sequence: initialSequenceValue + 2, EOF: true})
 	rhf.Assert(<-rhf.output == nil)
 	rhf.AssertEqual(rhf.buffer.closed, 1)
 }
@@ -67,5 +67,7 @@ func (rhf *ReaderHandlerFixture) TestMalformedInputReturnsError() {
 	malformedRecord := "A1"
 	rhf.writeLine(malformedRecord)
 	err := rhf.reader.Handle()
-	rhf.Assert(err != nil)
+	if rhf.Assert(err != nil) {
+		rhf.AssertEqual(err.Error(), "Malformed input")
+	}
 }
