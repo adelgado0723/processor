@@ -23,8 +23,9 @@ func NewWriterHandler(input chan *Envelope, output io.WriteCloser) *WriterHandle
 func (wh *WriterHandler) Handle() {
 
 	for envelope := range wh.input {
-		output := envelope.Output
-		wh.writeAddressOutput(output)
+		if envelope != endOfFile {
+			wh.writeAddressOutput(envelope.Output)
+		}
 	}
 	wh.writer.Flush()
 	wh.closer.Close()

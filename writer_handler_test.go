@@ -45,7 +45,7 @@ func (whf *WriterHandlerFixture) TestOutputClosed() {
 }
 
 func (whf *WriterHandlerFixture) TestEnvelopeWritten() {
-	whf.sendEnvelope(1)
+	whf.sendEnvelopes(1)
 	whf.handler.Handle()
 
 	lines := whf.outputLines()
@@ -55,7 +55,7 @@ func (whf *WriterHandlerFixture) TestEnvelopeWritten() {
 }
 
 func (whf *WriterHandlerFixture) TestAllEnvelopesWritten() {
-	whf.sendEnvelope(2)
+	whf.sendEnvelopes(2)
 	whf.handler.Handle()
 
 	lines := whf.outputLines()
@@ -94,12 +94,13 @@ func (whf *WriterHandlerFixture) outputLines() []string {
 	return strings.Split(outputFile, "\n")
 }
 
-func (whf *WriterHandlerFixture) sendEnvelope(count int) {
+func (whf *WriterHandlerFixture) sendEnvelopes(count int) {
 	for i := 1; i < count+1; i++ {
 		whf.input <- &Envelope{
 			Output: createOutput(strconv.Itoa(i)),
 		}
 	}
+	whf.input <- endOfFile
 	close(whf.input)
 }
 func createOutput(index string) AddressOutput {

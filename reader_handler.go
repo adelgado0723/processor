@@ -2,6 +2,7 @@ package processor
 
 import (
 	"encoding/csv"
+	"errors"
 	"io"
 )
 
@@ -24,7 +25,7 @@ func NewReaderHandler(reader io.ReadCloser, output chan *Envelope) *ReaderHandle
 func (rh *ReaderHandler) skipHeader() {
 	rh.reader.Read()
 }
-func (rh *ReaderHandler) Handle() {
+func (rh *ReaderHandler) Handle() error {
 	defer rh.close()
 	rh.skipHeader()
 
@@ -32,11 +33,13 @@ func (rh *ReaderHandler) Handle() {
 		record, err := rh.reader.Read()
 		if err == io.EOF {
 			break
-		} else {
+		} else if err != nil {
 			// Warn user about malformed file
+			return errors.New("Malformed input")
 		}
 		rh.sendEnvelope(record)
 	}
+	return nil
 }
 
 func (rh *ReaderHandler) close() {

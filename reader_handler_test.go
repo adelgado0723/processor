@@ -63,4 +63,9 @@ func buildEnvelope(index int) *Envelope {
 	}
 }
 
-func (rhf *ReaderHandlerFixture) TestMalformedInputReturnsError() {}
+func (rhf *ReaderHandlerFixture) TestMalformedInputReturnsError() {
+	malformedRecord := "A1"
+	rhf.writeLine(malformedRecord)
+	err := rhf.reader.Handle()
+	rhf.Assert(err != nil)
+}
