@@ -1,26 +1,27 @@
 package processor
 
 type SequenceHandler struct {
-	input       chan *Envelope
-	output      chan *Envelope
-	envelopeIdx int
-	buffer      map[int]*Envelope
+	input   chan *Envelope
+	output  chan *Envelope
+	counter int
+	buffer  map[int]*Envelope
 }
 
 func NewSequenceHandler(input, output chan *Envelope) *SequenceHandler {
 	return &SequenceHandler{
-		input:  input,
-		output: output,
-		buffer: make(map[int]*Envelope),
+		input:   input,
+		output:  output,
+		counter: initialSequenceValue,
+		buffer:  make(map[int]*Envelope),
 	}
 }
 
 func (sh *SequenceHandler) sendBufferedEnvelopesInOrder() {
-	_, found := sh.buffer[sh.envelopeIdx]
-	for ; found; _, found = sh.buffer[sh.envelopeIdx] {
-		sh.output <- sh.buffer[sh.envelopeIdx]
-		delete(sh.buffer, sh.envelopeIdx)
-		sh.envelopeIdx++
+	_, found := sh.buffer[sh.counter]
+	for ; found; _, found = sh.buffer[sh.counter] {
+		sh.output <- sh.buffer[sh.counter]
+		delete(sh.buffer, sh.counter)
+		sh.counter++
 	}
 }
 func (sh *SequenceHandler) processEnvelope(envelope *Envelope) {

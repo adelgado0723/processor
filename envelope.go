@@ -1,5 +1,12 @@
 package processor
 
+const (
+	initialSequenceValue = 0
+	eofSequenceValue     = -1
+)
+
+var endOfFile = &Envelope{Sequence: eofSequenceValue}
+
 type (
 	AddressInput struct {
 		Street1 string

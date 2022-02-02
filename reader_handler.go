@@ -6,16 +6,18 @@ import (
 )
 
 type ReaderHandler struct {
-	reader *csv.Reader
-	closer io.Closer
-	output chan *Envelope
+	reader   *csv.Reader
+	closer   io.Closer
+	output   chan *Envelope
+	sequence int
 }
 
 func NewReaderHandler(reader io.ReadCloser, output chan *Envelope) *ReaderHandler {
 	return &ReaderHandler{
-		reader: csv.NewReader(reader),
-		closer: reader,
-		output: output,
+		reader:   csv.NewReader(reader),
+		closer:   reader,
+		output:   output,
+		sequence: initialSequenceValue,
 	}
 }
 
@@ -23,19 +25,32 @@ func (rh *ReaderHandler) skipHeader() {
 	rh.reader.Read()
 }
 func (rh *ReaderHandler) Handle() {
+	defer rh.close()
 	rh.skipHeader()
 
 	for {
 		record, err := rh.reader.Read()
-		if err != nil {
+		if err == io.EOF {
 			break
+		} else {
+			// Warn user about malformed file
 		}
-		rh.output <- &Envelope{
-			Input: createInput(record),
-		}
+		rh.sendEnvelope(record)
 	}
 }
 
+func (rh *ReaderHandler) close() {
+	rh.output <- endOfFile
+	close(rh.output)
+	rh.closer.Close()
+}
+func (rh *ReaderHandler) sendEnvelope(record []string) {
+	rh.output <- &Envelope{
+		Sequence: rh.sequence,
+		Input:    createInput(record),
+	}
+	rh.sequence++
+}
 func createInput(record []string) AddressInput {
 	return AddressInput{
 		Street1: record[0],
