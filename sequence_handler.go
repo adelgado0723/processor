@@ -17,11 +17,19 @@ func NewSequenceHandler(input, output chan *Envelope) *SequenceHandler {
 }
 
 func (sh *SequenceHandler) sendBufferedEnvelopesInOrder() {
-	_, found := sh.buffer[sh.counter]
-	for ; found; _, found = sh.buffer[sh.counter] {
-		sh.output <- sh.buffer[sh.counter]
+	for {
+		next, found := sh.buffer[sh.counter]
+		if !found {
+			break
+		}
+		if next.EOF {
+			close(sh.input)
+		} else {
+			sh.output <- next
+		}
 		delete(sh.buffer, sh.counter)
 		sh.counter++
+
 	}
 }
 func (sh *SequenceHandler) processEnvelope(envelope *Envelope) {
