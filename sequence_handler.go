@@ -22,16 +22,20 @@ func (sh *SequenceHandler) sendBufferedEnvelopesInOrder() {
 		if !found {
 			break
 		}
-		if next.EOF {
-			close(sh.input)
-		} else {
-			sh.output <- next
-		}
-		delete(sh.buffer, sh.counter)
-		sh.counter++
-
+		sh.sendNextEnvelope(next)
 	}
 }
+
+func (sh *SequenceHandler) sendNextEnvelope(envelope *Envelope) {
+	if envelope.EOF {
+		close(sh.input)
+	} else {
+		sh.output <- envelope
+	}
+	delete(sh.buffer, sh.counter)
+	sh.counter++
+}
+
 func (sh *SequenceHandler) processEnvelope(envelope *Envelope) {
 	sh.buffer[envelope.Sequence] = envelope
 	sh.sendBufferedEnvelopesInOrder()

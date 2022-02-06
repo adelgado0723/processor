@@ -45,7 +45,6 @@ func (shf *SequenceHandlerFixture) sendEnvelopesInSequence(sequences ...int) {
 	for _, sequence := range sequences {
 		shf.input <- &Envelope{Sequence: sequence, EOF: sequence == max}
 	}
-	// close(shf.input)
 }
 
 func (shf *SequenceHandlerFixture) TestEvelopeReceivedOutOfOrder_BufferedUntilContiguousBlock() {
