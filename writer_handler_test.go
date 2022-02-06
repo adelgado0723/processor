@@ -2,7 +2,6 @@ package processor
 
 import (
 	"bytes"
-	"encoding/csv"
 	"strconv"
 	"strings"
 	"testing"
@@ -19,7 +18,6 @@ type WriterHandlerFixture struct {
 	handler *WriterHandler
 	input   chan *Envelope
 	buffer  *ReadWriteSpyBuffer
-	writer  *csv.Writer
 }
 
 func (whf *WriterHandlerFixture) Setup() {
