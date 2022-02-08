@@ -25,7 +25,6 @@ func (vf *VerifierFixture) Setup() {
 	vf.verifier = NewSmartyVerifier(vf.client)
 
 }
-func NewSmartyVerifier(client HTTPClient) *SmartyVerifier { return &SmartyVerifier{client: client} }
 
 func (vf *VerifierFixture) rawQuery() string {
 	return vf.client.request.URL.RawQuery

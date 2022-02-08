@@ -1,41 +1,53 @@
 package processor
 
 import (
+	"log"
 	"net/http"
 	"testing"
 
 	"github.com/smartystreets/gunit"
 )
 
-func TestWireupFixture(t *testing.T) {
-	gunit.Run(new(WireupFixture), t)
+func TestPipelineFixture(t *testing.T) {
+	gunit.Run(new(PipelineFixture), t)
 }
 
-type WireupFixture struct {
+type PipelineFixture struct {
 	*gunit.Fixture
 
-	reader  *ReadWriteSpyBuffer
-	writer  *ReadWriteSpyBuffer
-	client  *FakeHTTPClient
-	handler Handler
+	reader   *ReadWriteSpyBuffer
+	writer   *ReadWriteSpyBuffer
+	client   *IntegrationHTTPClient
+	pipeline *Pipeline
 }
 
-func (wf *WireupFixture) Setup() {
-	wf.reader = NewReadWriteSpyBuffer("")
-	wf.writer = NewReadWriteSpyBuffer("")
-	wf.client = &FakeHTTPClient{}
-	wf.handler = Configure(wf.reader, wf.writer, wf.client).Build()
+func (pf *PipelineFixture) Setup() {
+	log.SetFlags(log.Llongfile | log.Lmicroseconds)
+	pf.reader = NewReadWriteSpyBuffer("")
+	pf.writer = NewReadWriteSpyBuffer("")
+	pf.client = &IntegrationHTTPClient{}
+	pf.pipeline = Configure(pf.reader, pf.writer, pf.client, 2) // .Handle()?
 
 }
-func (wf *WireupFixture) LongTestPipeline() {
-	wf.client.Configure(integrationJSONOutput, http.StatusOK, nil)
-	wf.reader.WriteString("A,B,C,D")
-	wf.reader.WriteString("A,B,C,D")
-	wf.handler.Handle()
+func (pf *PipelineFixture) LongTestPipeline() {
+	pf.reader.WriteString("A,B,C,D")
+	pf.reader.WriteString("A,B,C,D")
+	err := pf.pipeline.Process()
 	expected := "Status,DeliveryLine1,LastLine,City,State,ZIPCode\n" +
 		"Deliverable,AA,BB,CC,DD,EE\n" +
 		"Deliverable,AA,BB,CC,DD,EE\n"
-	wf.AssertEqual(expected, wf.writer.String())
+	pf.AssertEqual(expected, pf.writer.String())
+
+	pf.Assert(err == nil)
+}
+
+type IntegrationHTTPClient struct{}
+
+func (c *IntegrationHTTPClient) Do(request *http.Request) (*http.Response, error) {
+	return &http.Response{
+		Body:       NewReadWriteSpyBuffer(integrationJSONOutput),
+		StatusCode: http.StatusOK,
+	}, nil
 }
 
 const integrationJSONOutput = `
