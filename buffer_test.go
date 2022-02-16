@@ -3,6 +3,7 @@ package processor
 import (
 	"encoding/csv"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/smartystreets/gunit"
@@ -28,7 +29,7 @@ func (sbf *SpyBufferFixture) Test() {
 	sbf.Assert(err == nil)
 	sbf.AssertEqual(string(raw), "Hello, World!")
 
-	reader := csv.NewReader(buffer)
+	reader := csv.NewReader(strings.NewReader("Hello, World!"))
 	record, err2 := reader.Read()
 	sbf.Assert(err2 == nil)
 

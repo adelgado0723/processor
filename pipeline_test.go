@@ -1,11 +1,9 @@
 package processor
 
 import (
-	"bytes"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"strings"
 	"testing"
 
 	"github.com/smartystreets/gunit"
@@ -18,32 +16,30 @@ func TestPipelineFixture(t *testing.T) {
 type PipelineFixture struct {
 	*gunit.Fixture
 
-	reader   *strings.Reader
+	reader   *ReadWriteSpyBuffer
 	writer   *ReadWriteSpyBuffer
 	client   *IntegrationHTTPClient
 	pipeline *Pipeline
 }
 
 func (pf *PipelineFixture) Setup() {
-	log.SetFlags(log.Llongfile | log.Lmicroseconds)
-}
-func (pf *PipelineFixture) LongTestPipeline() {
-	buffer := new(bytes.Buffer)
-
-	buffer.WriteString("Street1,City,State,ZIPCode")
-	buffer.WriteString("A,B,C,D")
-	buffer.WriteString("A,B,C,D")
-
-	pf.reader = strings.NewReader(buffer.String())
+	pf.reader = NewReadWriteSpyBuffer("")
 	pf.writer = NewReadWriteSpyBuffer("")
 	pf.client = &IntegrationHTTPClient{}
-	pf.pipeline = Configure(ioutil.NopCloser(pf.reader), pf.writer, pf.client, 2) // .Handle()?
+	pf.pipeline = Configure(ioutil.NopCloser(pf.reader), pf.writer, pf.client, 2)
+}
+func (pf *PipelineFixture) LongTestPipeline() {
+	fmt.Fprintln(pf.reader, "Street1,City,State,ZIPCode")
+	fmt.Fprintln(pf.reader, "A,B,C,D")
+	fmt.Fprintln(pf.reader, "A,B,C,D")
+
 	err := pf.pipeline.Process()
 
 	expected := "Status,DeliveryLine1,LastLine,City,State,ZIPCode\n" +
 		"Deliverable,AA,BB,CC,DD,EE\n" +
 		"Deliverable,AA,BB,CC,DD,EE\n"
 	pf.AssertEqual(expected, pf.writer.String())
+	fmt.Println("expected: ", expected, "\nactual: ", pf.writer.String())
 
 	pf.Assert(err == nil)
 }
