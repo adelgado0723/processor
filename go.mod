@@ -1,4 +1,4 @@
-module processor
+module github.com/adelgado0723/processor
 
 go 1.17
 

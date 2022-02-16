@@ -26,7 +26,7 @@ func (pf *PipelineFixture) Setup() {
 	pf.reader = NewReadWriteSpyBuffer("")
 	pf.writer = NewReadWriteSpyBuffer("")
 	pf.client = &IntegrationHTTPClient{}
-	pf.pipeline = Configure(ioutil.NopCloser(pf.reader), pf.writer, pf.client, 2)
+	pf.pipeline = NewPipeline(ioutil.NopCloser(pf.reader), pf.writer, pf.client, 2)
 }
 func (pf *PipelineFixture) LongTestPipeline() {
 	fmt.Fprintln(pf.reader, "Street1,City,State,ZIPCode")

@@ -18,7 +18,7 @@ type Pipeline struct {
 	writerInput   chan *Envelope
 }
 
-func Configure(reader io.ReadCloser, writer io.WriteCloser, client HTTPClient, workers int) *Pipeline {
+func NewPipeline(reader io.ReadCloser, writer io.WriteCloser, client HTTPClient, workers int) *Pipeline {
 	return &Pipeline{
 		reader:        reader,
 		writer:        writer,
